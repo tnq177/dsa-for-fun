@@ -1,11 +1,33 @@
 """
 ID: toannq12
 LANG: PYTHON3
-TASK: test
+TASK: ride
 """
-fin = open ('test.in', 'r')
-fout = open ('test.out', 'w')
-x,y = map(int, fin.readline().split())
-sum = x+y
-fout.write (str(sum) + '\n')
-fout.close()
+
+MOD = 47
+
+
+def string2num(line):
+    res = 1
+    for c in line:
+        num = ord(c) - ord("A") + 1
+        res = (res * num) % MOD
+    return res
+
+
+def main():
+    with open("ride.in", "r") as f:
+        lines = f.readlines()
+        lines = [l.strip() for l in lines]
+
+    a = string2num(lines[0])
+    b = string2num(lines[1])
+    with open("ride.out", "w") as f:
+        if a == b:
+            f.write("GO\n")
+        else:
+            f.write("STAY\n")
+
+
+if __name__ == "__main__":
+    main()
