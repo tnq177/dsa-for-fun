@@ -6,13 +6,6 @@ TASK: sort3
 from collections import Counter
 
 
-def is_sorted(nums):
-    for i in range(1, len(nums)):
-        if nums[i] < nums[i - 1]:
-            return False
-    return True
-
-
 def main():
     with open("sort3.in", "r") as f:
         N = int(f.readline().strip())
