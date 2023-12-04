@@ -37,7 +37,6 @@ def get_shortest_path(target):
     q = deque([(init, 0, "")])
     while q:
         state, dist, path = q.popleft()
-        print(state, dist, path)
         if state == target:
             return dist, path
 
