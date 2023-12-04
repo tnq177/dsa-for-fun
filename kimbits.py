@@ -5,6 +5,8 @@ TASK: kimbits
 """
 
 
+# similar to this problem on Leetcode
+# https://leetcode.com/problems/permutation-sequence/solutions/4347575/simple-recursive/
 def main():
     with open("kimbits.in", "r") as f:
         N, L, I = [int(x) for x in f.readline().strip().split()]
