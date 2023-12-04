@@ -5,6 +5,7 @@ TASK: stamps
 """
 
 # this solution will timeout. I don't think it's feasible with Python...
+# update: 12/4/23: Rob retuned the test data and this now should pass
 def calc_continuous(K, stamps):
     dp = [float("inf")] * (K * max(stamps) + 2)
     dp[0] = 0
