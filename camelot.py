@@ -3,7 +3,7 @@ ID: toannq12
 LANG: PYTHON3
 TASK: camelot
 """
-import heapq as H
+from collections import deque
 
 
 def main():
@@ -23,17 +23,17 @@ def main():
         r = R - int(data[i + 1])
         knights.append(r * C + c)
 
-    king_dirs = [
+    KING_DIRS = [
         (-1, -1),
         (-1, 0),
-        (1, 0),
+        (-1, 1),
         (0, -1),
         (0, 1),
         (1, -1),
         (1, 0),
         (1, 1),
     ]
-    knight_dirs = [
+    KNIGHT_DIRS = [
         (-2, -1),
         (-2, 1),
         (-1, -2),
@@ -44,65 +44,65 @@ def main():
         (2, 1),
     ]
 
-    def shortest_path(start, is_king=False):
-        dirs = king_dirs if is_king else knight_dirs
-        cache = {i: float("inf") for i in range(R * C)}
-        maps = {}
+    q = deque([(0, king)])
+    king_shortest = [float("inf")] * (R * C)
+    king_shortest[king] = 0
+    while q:
+        d, s = q.popleft()
+        r, c = s // C, s % C
+        for dr, dc in KING_DIRS:
+            nr, nc = r + dr, c + dc
+            new_s = nr * C + nc
+            if 0 <= nr < R and 0 <= nc < C and king_shortest[new_s] > d + 1:
+                king_shortest[new_s] = d + 1
+                q.append((d + 1, new_s))
 
-        cache[start] = 0
-        h = [(0, start, None)]
-        for _ in range(R * C):
-            dist, node, parent = H.heappop(h)
-            maps[node] = parent
-            r = node // C
-            c = node % C
-            for dr, dc in dirs:
-                nr = r + dr
-                nc = c + dc
-                next_node = nr * C + nc
-                if 0 <= nr < R and 0 <= nc < C and cache[next_node] > dist + 1:
-                    cache[next_node] = dist + 1
-                    H.heappush(h, (dist + 1, next_node, node))
+    shortest = [[float("inf")] * (R * C) for _ in range(R * C)]
+    shortest_with_king = [[float("inf")] * (R * C) for _ in range(R * C)]
+    for i in range(R * C):
+        q = deque([(0, i)])
+        shortest[i][i] = 0
+        shortest_with_king[i][i] = king_shortest[i]
 
-        return cache, maps
+        while q:
+            d, s = q.popleft()
+            r, c = s // C, s % C
+            for dr, dc in KNIGHT_DIRS:
+                nr, nc = r + dr, c + dc
+                new_s = nr * C + nc
+                if 0 <= nr < R and 0 <= nc < C:
+                    if shortest[i][new_s] > d + 1:
+                        shortest[i][new_s] = d + 1
+                        q.append((d + 1, new_s))
+                    if shortest_with_king[i][new_s] > d + 1 + king_shortest[new_s]:
+                        shortest_with_king[i][new_s] = d + 1 + king_shortest[new_s]
 
-    king_dist = shortest_path(king, is_king=True)[0]
-    all_dists = []
-    all_maps = []
-    for loc in range(R * C):
-        cache, maps = shortest_path(loc, is_king=False)
-        all_dists.append(cache)
-        all_maps.append(maps)
+        q = deque([(king_shortest[i], i)])
+        while q:
+            d, s = q.popleft()
+            r, c = s // C, s % C
+            for dr, dc in KNIGHT_DIRS:
+                nr, nc = r + dr, c + dc
+                new_s = nr * C + nc
+                if 0 <= nr < R and 0 <= nc < C and shortest_with_king[i][new_s] > d + 1:
+                    shortest_with_king[i][new_s] = d + 1
+                    q.append((d + 1, new_s))
 
-    knight_dist = {}
-    closest_knight = {}
-    for loc in range(R * C):
-        total = 0
-        min_knight = min_dist = None
-        for knight in knights:
-            d = all_dists[knight][loc]
-            total += d
-            if min_dist is None or min_dist > d:
-                min_dist = d
-                min_knight = knight
-        closest_knight[loc] = min_knight
-        knight_dist[loc] = total
-
+    knight_total = [0] * (R * C)
+    for knight in knights:
+        for i in range(R * C):
+            knight_total[i] += shortest[knight][i]
 
     res = float("inf")
-    for loc in range(R * C):
-        total_knight = knight_dist[loc]
-        total_king = king_dist[loc]
-
-        # king go by himself
-        res = min(res, total_knight + total_king)
-
-        # king try to get a ride
-        if knights:
-            for meet_loc in range(R * C):
-                chosen_knight = closest_knight[meet_loc]
-                meet_dist = total_knight - all_dists[chosen_knight][loc] + king_dist[meet_loc] + all_dists[chosen_knight][meet_loc] + all_dists[meet_loc][loc]
-                res = min(res, meet_dist)
+    for meet in range(R * C):
+        res = min(res, knight_total[meet] + king_shortest[meet])
+        for knight in knights:
+            dist = (
+                shortest_with_king[knight][meet]
+                + knight_total[meet]
+                - shortest[knight][meet]
+            )
+            res = min(res, dist)
 
     with open("camelot.out", "w") as f:
         f.write(f"{res}\n")
