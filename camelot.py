@@ -58,54 +58,75 @@ def main():
                 q.append((d + 1, new_s))
 
     shortest = [[float("inf")] * (R * C) for _ in range(R * C)]
-    shortest_with_king = [[float("inf")] * (R * C) for _ in range(R * C)]
+    q = deque([(0, 0)])
+    shortest[0][0] = 0
+    while q:
+        d, s = q.popleft()
+        r, c = s // C, s % C
+        for dr, dc in KNIGHT_DIRS:
+            nr, nc = r + dr, c + dc
+            new_s = nr * C + nc
+            if 0 <= nr < R and 0 <= nc < C and shortest[0][new_s] > d + 1:
+                shortest[0][new_s] = d + 1
+                q.append((d + 1, new_s))
+    if R > 1:
+        shortest[0][C + 1] = 2
     for i in range(R * C):
-        q = deque([(0, i)])
-        shortest[i][i] = 0
-        shortest_with_king[i][i] = king_shortest[i]
+        ir, ic = i // C, i % C
+        for j in range(i, R * C):
+            jr, jc = j // C, j % C
+            abs_r, abs_c = abs(jr - ir), abs(jc - ic)
+            shortest[i][j] = shortest[j][i] = shortest[0][abs_r * C + abs_c]
+    if R >= 2 and C >= 2:
+        for corner_x, corner_y, to_x, to_y in [
+            (0, 0, 1, 1),
+            (0, C - 1, 1, C - 2),
+            (R - 1, 0, R - 2, 1),
+            (R - 1, C - 1, R - 2, C - 2),
+        ]:
+            i = corner_x * C + corner_y
+            j = to_x * C + to_y
+            shortest[i][j] = 4
 
-        while q:
-            d, s = q.popleft()
-            r, c = s // C, s % C
-            for dr, dc in KNIGHT_DIRS:
-                nr, nc = r + dr, c + dc
-                new_s = nr * C + nc
-                if 0 <= nr < R and 0 <= nc < C:
-                    if shortest[i][new_s] > d + 1:
-                        shortest[i][new_s] = d + 1
-                        q.append((d + 1, new_s))
-                    if shortest_with_king[i][new_s] > d + 1 + king_shortest[new_s]:
-                        shortest_with_king[i][new_s] = d + 1 + king_shortest[new_s]
-
-        q = deque([(king_shortest[i], i)])
-        while q:
-            d, s = q.popleft()
-            r, c = s // C, s % C
-            for dr, dc in KNIGHT_DIRS:
-                nr, nc = r + dr, c + dc
-                new_s = nr * C + nc
-                if 0 <= nr < R and 0 <= nc < C and shortest_with_king[i][new_s] > d + 1:
-                    shortest_with_king[i][new_s] = d + 1
-                    q.append((d + 1, new_s))
-
-    knight_total = [0] * (R * C)
-    for knight in knights:
-        for i in range(R * C):
-            knight_total[i] += shortest[knight][i]
-
+    total_knight = [0] * (R * C)
     res = float("inf")
     for meet in range(R * C):
-        res = min(res, knight_total[meet] + king_shortest[meet])
         for knight in knights:
-            dist = (
-                shortest_with_king[knight][meet]
-                + knight_total[meet]
-                - shortest[knight][meet]
-            )
+            total_knight[meet] += shortest[knight][meet]
+        res = min(res, total_knight[meet] + king_shortest[meet])
+
+    for knight in knights:
+        tmp = [shortest[knight][loc] + king_shortest[loc] for loc in range(R * C)]
+        min_val = min(tmp)
+        q = deque([])
+        for loc in range(R * C):
+            if tmp[loc] == min_val:
+                q.append((min_val, loc))
+        i = 0
+        while q:
+            d, s = q.popleft()
+            dist = total_knight[s] - shortest[knight][s] + d
             res = min(res, dist)
+            r, c = s // C, s % C
+            for dr, dc in KNIGHT_DIRS:
+                nr, nc = r + dr, c + dc
+                new_s = nr * C + nc
+                if 0 <= nr < R and 0 <= nc < C and tmp[new_s] > d + 1:
+                    tmp[new_s] = d + 1
+                    q.append((d + 1, new_s))
 
     with open("camelot.out", "w") as f:
         f.write(f"{res}\n")
+
+    res = float("inf")
+    for meet in range(R * C):
+        res = min(res, total_knight[meet] + king_shortest[meet])
+        for pick in range(R * C):
+            for knight in knights:
+                dist = total_knight[meet] - shortest[knight][meet] + shortest[knight][pick] + shortest[pick][meet] + king_shortest[pick]
+                res = min(res, dist)
+    print(res)
+
 
 
 if __name__ == "__main__":
