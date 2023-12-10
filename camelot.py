@@ -89,44 +89,24 @@ def main():
             shortest[i][j] = 4
 
     total_knight = [0] * (R * C)
-    res = float("inf")
     for meet in range(R * C):
         for knight in knights:
             total_knight[meet] += shortest[knight][meet]
-        res = min(res, total_knight[meet] + king_shortest[meet])
-
-    for knight in knights:
-        tmp = [shortest[knight][loc] + king_shortest[loc] for loc in range(R * C)]
-        min_val = min(tmp)
-        q = deque([])
-        for loc in range(R * C):
-            if tmp[loc] == min_val:
-                q.append((min_val, loc))
-        i = 0
-        while q:
-            d, s = q.popleft()
-            dist = total_knight[s] - shortest[knight][s] + d
-            res = min(res, dist)
-            r, c = s // C, s % C
-            for dr, dc in KNIGHT_DIRS:
-                nr, nc = r + dr, c + dc
-                new_s = nr * C + nc
-                if 0 <= nr < R and 0 <= nc < C and tmp[new_s] > d + 1:
-                    tmp[new_s] = d + 1
-                    q.append((d + 1, new_s))
-
-    with open("camelot.out", "w") as f:
-        f.write(f"{res}\n")
 
     res = float("inf")
     for meet in range(R * C):
         res = min(res, total_knight[meet] + king_shortest[meet])
         for pick in range(R * C):
             for knight in knights:
-                dist = total_knight[meet] - shortest[knight][meet] + shortest[knight][pick] + shortest[pick][meet] + king_shortest[pick]
+                dist = (
+                    total_knight[meet]
+                    - shortest[knight][meet]
+                    + shortest[knight][pick]
+                    + shortest[pick][meet]
+                    + king_shortest[pick]
+                )
                 res = min(res, dist)
     print(res)
-
 
 
 if __name__ == "__main__":
