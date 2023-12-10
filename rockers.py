@@ -10,36 +10,35 @@ def main():
         N, T, M = [int(x) for x in f.readline().strip().split()]
         songs = [int(x) for x in f.readline().strip().split()]
 
-    res = [0]
-    remain = [T] * M
-    count = [0]
+    cache = {}
 
-    def dfs(i):
-        res[0] = max(res[0], count[0])
-        if not remain or i == N:
-            return
+    def dp(disk_left, minutes_left, song_idx):
+        if song_idx >= N:
+            return 0
 
-        # select i
-        old_vals = []
-        while remain and remain[-1] < songs[i]:
-            old_vals.append(remain.pop())
+        if disk_left < 0:
+            return 0
 
-        if remain:
-            remain[-1] -= songs[i]
-            count[0] += 1
-            dfs(i + 1)
-            count[0] -= 1
-            remain[-1] += songs[i]
+        if (disk_left, minutes_left, song_idx) in cache:
+            return cache[(disk_left, minutes_left, song_idx)]
 
-        while old_vals:
-            remain.append(old_vals.pop())
+        res = []
+        # don't add song_idx
+        res.append(dp(disk_left, minutes_left, song_idx + 1))
+        # add song_idx to current minutes_left
+        if minutes_left >= songs[song_idx]:
+            res.append(1 + dp(disk_left, minutes_left - songs[song_idx], song_idx + 1))
+        # ignore current minutes_left, use a new disk
+        res.append(dp(disk_left - 1, T, song_idx))
+        # ignore current minutes_left, use a new disk and also ignore song_idx
+        res.append(dp(disk_left - 1, T, song_idx + 1))
+        res = max(res)
+        cache[(disk_left, minutes_left, song_idx)] = res
+        return res
 
-        # don't select i
-        dfs(i + 1)
-
-    dfs(0)
+    max_song = dp(M - 1, T, 0)
     with open("rockers.out", "w") as f:
-        f.write(f"{res[0]}\n")
+        f.write(f"{max_song}\n")
 
 
 if __name__ == "__main__":
