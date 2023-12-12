@@ -3,7 +3,7 @@ ID: toannq12
 LANG: PYTHON3
 TASK: camelot
 """
-from collections import deque
+from collections import defaultdict, deque
 
 
 def main():
@@ -44,78 +44,99 @@ def main():
         (2, 1),
     ]
 
+    king_neighbors = defaultdict(list)
+    knight_neighbors = defaultdict(list)
+
+    for s in range(R * C):
+        r, c = s // C, s % C
+        for dr, dc in KING_DIRS:
+            nr, nc = r + dr, c + dc
+            if 0 <= nr < R and 0 <= nc < C:
+                new_s = nr * C + nc
+                king_neighbors[s].append(new_s)
+        for dr, dc in KNIGHT_DIRS:
+            nr, nc = r + dr, c + dc
+            if 0 <= nr < R and 0 <= nc < C:
+                new_s = nr * C + nc
+                knight_neighbors[s].append(new_s)
+
     q = deque([(0, king)])
     king_shortest = [float("inf")] * (R * C)
     king_shortest[king] = 0
     while q:
         d, s = q.popleft()
-        r, c = s // C, s % C
-        for dr, dc in KING_DIRS:
-            nr, nc = r + dr, c + dc
-            new_s = nr * C + nc
-            if 0 <= nr < R and 0 <= nc < C and king_shortest[new_s] > d + 1:
+        for new_s in king_neighbors[s]:
+            if king_shortest[new_s] > d + 1:
                 king_shortest[new_s] = d + 1
                 q.append((d + 1, new_s))
 
-    # this is really clever, I didn't come up w it
     shortest = [[float("inf")] * (R * C) for _ in range(R * C)]
-    q = deque([(0, 0)])
-    shortest[0][0] = 0
-    while q:
-        d, s = q.popleft()
-        r, c = s // C, s % C
-        for dr, dc in KNIGHT_DIRS:
-            nr, nc = r + dr, c + dc
-            new_s = nr * C + nc
-            if 0 <= nr < R and 0 <= nc < C:
-                if shortest[0][new_s] > d + 1:
-                    shortest[0][new_s] = d + 1
-                    q.append((d + 1, new_s))
-    if R >= 2 and C >= 2:
-        shortest[0][C + 1] = 2
     for i in range(R * C):
         shortest[i][i] = 0
-        for j in range(i + 1, R * C):
-            ir, ic = i // C, i % C
-            jr, jc = j // C, j % C
-            abs_r = abs(jr - ir)
-            abs_c = abs(jc - ic)
-            shortest[i][j] = shortest[j][i] = shortest[0][abs_r * C + abs_c]
-    if R >= 2 and C >= 2:
-        for r, c, nr, nc in [
-            (0, 0, 1, 1),
-            (0, C - 1, 1, C - 2),
-            (R - 1, 0, R - 2, 1),
-            (R - 1, C - 1, R - 2, C - 2),
-        ]:
-            i = r * C + c
-            j = nr * C + nc
-            shortest[i][j] = 4
-
-    shortest_with_king = [[float("inf")] * (R * C) for _ in range(R * C)]
-    for i in range(R * C):
-        for j in range(R * C):
-            shortest_with_king[i][j] = shortest[i][j] + king_shortest[j]
-
-    for i in range(R * C):
         q = deque([(0, i)])
-        shortest_with_king[i][i] = king_shortest[i]
-
-        q = deque([(king_shortest[i], i)])
         while q:
             d, s = q.popleft()
-            r, c = s // C, s % C
-            for dr, dc in KNIGHT_DIRS:
-                nr, nc = r + dr, c + dc
-                new_s = nr * C + nc
-                if 0 <= nr < R and 0 <= nc < C and shortest_with_king[i][new_s] > d + 1:
-                    shortest_with_king[i][new_s] = d + 1
+            for new_s in knight_neighbors[s]:
+                if shortest[i][new_s] > d + 1:
+                    shortest[i][new_s] = d + 1
                     q.append((d + 1, new_s))
+    # q = deque([(0, 0)])
+    # shortest[0][0] = 0
+    # while q:
+    #     d, s = q.popleft()
+    #     for new_s in knight_neighbors[s]:
+    #         if shortest[0][new_s] > d + 1:
+    #             shortest[0][new_s] = d + 1
+    #             q.append((d + 1, new_s))
+    # # this is really clever, I didn't come up w it
+    # if R >= 2 and C >= 2 and shortest[0][C + 1] == 4:
+    #     shortest[0][C + 1] = 2
+    # for i in range(R * C):
+    #     shortest[i][i] = 0
+    #     for j in range(i + 1, R * C):
+    #         ir, ic = i // C, i % C
+    #         jr, jc = j // C, j % C
+    #         abs_r = abs(jr - ir)
+    #         abs_c = abs(jc - ic)
+    #         shortest[i][j] = shortest[j][i] = shortest[0][abs_r * C + abs_c]
+    # if R >= 2 and C >= 2:
+    #     for r, c, nr, nc in [
+    #         (0, 0, 1, 1),
+    #         (0, C - 1, 1, C - 2),
+    #         (R - 1, 0, R - 2, 1),
+    #         (R - 1, C - 1, R - 2, C - 2),
+    #     ]:
+    #         i = r * C + c
+    #         j = nr * C + nc
+    #         if shortest[i][j] == 2:
+    #             shortest[i][j] = 4
+
+    shortest_with_king = [[float("inf")] * (R * C) for _ in range(R * C)]
+    starting_dist = {}
+    for i in range(R * C):
+        minval = float("inf")
+        for j in range(R * C):
+            shortest_with_king[i][j] = shortest[i][j] + king_shortest[j]
+            minval = min(minval, shortest_with_king[i][j])
+        starting_dist[i] = minval
 
     knight_total = [0] * (R * C)
-    for knight in knights:
-        for i in range(R * C):
+    for i in range(R * C):
+        for knight in knights:
             knight_total[i] += shortest[knight][i]
+
+        q = deque([])
+        minval = starting_dist[i]
+        for j in range(R * C):
+            if shortest[i][j] == minval:
+                q.append((minval, j))
+
+        while q:
+            d, s = q.popleft()
+            for new_s in knight_neighbors[s]:
+                if shortest_with_king[i][new_s] > d + 1:
+                    shortest_with_king[i][new_s] = d + 1
+                    q.append((d + 1, new_s))
 
     res = float("inf")
     for meet in range(R * C):
@@ -128,6 +149,9 @@ def main():
             )
             res = min(res, dist)
 
+    # # don't know why I got shorter path, hardcode this to test other cases
+    # if res == 4485:
+    #     res += 1
     with open("camelot.out", "w") as f:
         f.write(f"{res}\n")
 
