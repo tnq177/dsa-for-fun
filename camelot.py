@@ -149,9 +149,7 @@ def main():
             )
             res = min(res, dist)
 
-    # # don't know why I got shorter path, hardcode this to test other cases
-    # if res == 4485:
-    #     res += 1
+    # the official answer for the embedded test case is 4486
     with open("camelot.out", "w") as f:
         f.write(f"{res}\n")
 
