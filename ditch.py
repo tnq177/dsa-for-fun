@@ -5,6 +5,7 @@ TASK: ditch
 """
 
 from collections import defaultdict, Counter
+import heapq as H
 
 
 def main():
@@ -17,32 +18,32 @@ def main():
 
     res = 0
     while True:
-        # find the maximum path from source to sink
         prev_node = [None] * M
         flow = [0] * M
         visited = [False] * M
-
         flow[0] = float("inf")
-        while True:
-            max_flow = 0
-            max_loc = None
-            for i in range(M):
-                if flow[i] > max_flow and not visited[i]:
-                    max_flow = flow[i]
-                    max_loc = i
-            if max_loc is None or max_loc == M - 1:
+        h = [(float("-inf"), 0, None)]
+        while h:
+            max_flow, node, parent = H.heappop(h)
+            if visited[node]:
+                continue
+            visited[node] = True
+            prev_node[node] = parent
+            max_flow = -max_flow
+            if node == M - 1:
+                # found sink
                 break
-            visited[max_loc] = True
-            for nei in capacity[max_loc]:
-                if flow[nei] < min(max_flow, capacity[max_loc][nei]):
-                    flow[nei] = min(max_flow, capacity[max_loc][nei])
-                    prev_node[nei] = max_loc
 
-        if max_loc is None:
+            for nei in capacity[node]:
+                if visited[nei]:
+                    continue
+                if flow[nei] < min(max_flow, capacity[node][nei]):
+                    flow[nei] = min(max_flow, capacity[node][nei])
+                    H.heappush(h, (-flow[nei], nei, node))
+
+        if flow[M - 1] == 0:
             break
         res += flow[M - 1]
-
-        # update capacity
         curr = M - 1
         while curr != 0:
             next_curr = prev_node[curr]
