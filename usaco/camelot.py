@@ -13,6 +13,13 @@ def main():
             data.extend(line.strip().split())
 
     R, C = int(data[0]), int(data[1])
+    RC = R * C
+    MAX = 10**9
+    q = deque([])
+    clear = q.clear
+    append = q.append
+    popleft = q.popleft
+
     king_c = ord(data[2]) - ord("A")
     king_r = R - int(data[3])
     king = king_r * C + king_c
@@ -23,16 +30,19 @@ def main():
         r = R - int(data[i + 1])
         knights.append(r * C + c)
 
-    KING_DIRS = [
-        (-1, -1),
-        (-1, 0),
-        (-1, 1),
-        (0, -1),
-        (0, 1),
-        (1, -1),
-        (1, 0),
-        (1, 1),
-    ]
+    if not knights:
+        return 0
+
+    king_shortest = [0] * RC
+    for idx in range(RC):
+        r, c = divmod(idx, C)
+        abs_r = abs(r - king_r)
+        abs_c = abs(c - king_c)
+        king_shortest[idx] = min(
+            abs_r + abs(abs_c - abs_r),
+            abs_c + abs(abs_r - abs_c),
+        )
+
     KNIGHT_DIRS = [
         (-2, -1),
         (-2, 1),
@@ -44,63 +54,36 @@ def main():
         (2, 1),
     ]
 
-    king_neighbors = defaultdict(list)
-    knight_neighbors = defaultdict(list)
-
-    for s in range(R * C):
-        r, c = s // C, s % C
-        for dr, dc in KING_DIRS:
-            nr, nc = r + dr, c + dc
-            if 0 <= nr < R and 0 <= nc < C:
-                new_s = nr * C + nc
-                king_neighbors[s].append(new_s)
+    knight_neighbors = [[] for _ in range(RC)]
+    for s, neighbors in enumerate(knight_neighbors):
+        r, c = divmod(s, C)
         for dr, dc in KNIGHT_DIRS:
             nr, nc = r + dr, c + dc
             if 0 <= nr < R and 0 <= nc < C:
-                new_s = nr * C + nc
-                knight_neighbors[s].append(new_s)
+                neighbors.append(nr * C + nc)
 
-    q = deque([(0, king)])
-    king_shortest = [float("inf")] * (R * C)
-    king_shortest[king] = 0
+    shortest = [[MAX] * RC for _ in range(RC)]
+    shortest_0 = shortest[0]
+    shortest_0[0] = 0
+    clear()
+    append((0, 0))
     while q:
-        d, s = q.popleft()
-        for new_s in king_neighbors[s]:
-            if king_shortest[new_s] > d + 1:
-                king_shortest[new_s] = d + 1
-                q.append((d + 1, new_s))
-
-    # shortest = [[float("inf")] * (R * C) for _ in range(R * C)]
-    # for i in range(R * C):
-    #     shortest[i][i] = 0
-    #     q = deque([(0, i)])
-    #     while q:
-    #         d, s = q.popleft()
-    #         for new_s in knight_neighbors[s]:
-    #             if shortest[i][new_s] > d + 1:
-    #                 shortest[i][new_s] = d + 1
-    #                 q.append((d + 1, new_s))
-
-    shortest = [[float("inf")] * (R * C) for _ in range(R * C)]
-    shortest[0][0] = 0
-    q = deque([(0, 0)])
-    while q:
-        d, s = q.popleft()
+        d, s = popleft()
         for new_s in knight_neighbors[s]:
-            if shortest[0][new_s] > d + 1:
-                shortest[0][new_s] = d + 1
-                q.append((d + 1, new_s))
+            if shortest_0[new_s] > d + 1:
+                shortest_0[new_s] = d + 1
+                append((d + 1, new_s))
     # this is really clever, I didn't come up w it
-    if R >= 2 and C >= 2 and shortest[0][C + 1] == 4:
-        shortest[0][C + 1] = 2
-    for i in range(R * C):
-        shortest[i][i] = 0
-        for j in range(i + 1, R * C):
+    if R >= 2 and C >= 2 and shortest_0[C + 1] == 4:
+        shortest_0[C + 1] = 2
+    for i, shortest_i in enumerate(shortest):
+        shortest_i[i] = 0
+        for j in range(i + 1, RC):
             ir, ic = i // C, i % C
             jr, jc = j // C, j % C
             abs_r = abs(jr - ir)
             abs_c = abs(jc - ic)
-            shortest[i][j] = shortest[j][i] = shortest[0][abs_r * C + abs_c]
+            shortest_i[j] = shortest[j][i] = shortest_0[abs_r * C + abs_c]
     if R >= 2 and C >= 2:
         for r, c, nr, nc in [
             (0, 0, 1, 1),
@@ -113,36 +96,31 @@ def main():
             if shortest[i][j] == 2:
                 shortest[i][j] = 4
 
-    shortest_with_king = [[float("inf")] * (R * C) for _ in range(R * C)]
-    knight_total = [0] * (R * C)
-    for i in range(R * C):
-        for knight in knights:
-            knight_total[i] += shortest[knight][i]
-
-        shortest_with_king[i][i] = king_shortest[i]
-        q = deque([(king_shortest[i], i)])
+    knight_shortest = [shortest[knight] for knight in knights]
+    knight_total = [sum(i) for i in zip(*knight_shortest)]
+    shortest_with_king = [[MAX] * RC for _ in range(RC)]
+    for i, (with_king, no_king) in enumerate(zip(shortest_with_king, shortest)):
+        with_king[i] = king_shortest[i]
+        clear()
+        append((king_shortest[i], i))
         while q:
-            d, s = q.popleft()
+            d, s = popleft()
             for new_s in knight_neighbors[s]:
-                cand = min(shortest[i][new_s] + king_shortest[new_s], d + 1)
-                if shortest_with_king[i][new_s] > cand:
-                    shortest_with_king[i][new_s] = cand
-                    q.append((d + 1, new_s))
+                cand = min(no_king[new_s] + king_shortest[new_s], d + 1)
+                if with_king[new_s] > cand:
+                    with_king[new_s] = cand
+                    append((d + 1, new_s))
 
-    res = float("inf")
-    for meet in range(R * C):
-        res = min(res, knight_total[meet] + king_shortest[meet])
-        for knight in knights:
-            dist = (
-                shortest_with_king[knight][meet]
-                + knight_total[meet]
-                - shortest[knight][meet]
-            )
+    res = MAX
+    for meet, (total_d, king_d) in enumerate(zip(knight_total, king_shortest)):
+        res = min(res, total_d + king_d)
+        for k, k_shortest in zip(knights, knight_shortest):
+            dist = total_d - k_shortest[meet] + shortest_with_king[k][meet]
             res = min(res, dist)
 
-    with open("camelot.out", "w") as f:
-        f.write(f"{res}\n")
+    return res
 
 
 if __name__ == "__main__":
-    main()
+    with open("camelot.out", "w") as f:
+        f.write(f"{main()}\n")
