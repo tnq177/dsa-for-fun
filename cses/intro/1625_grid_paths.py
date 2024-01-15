@@ -19,7 +19,6 @@ def main():
         seen[i][0] = True
         seen[i][-1] = True
 
-
     def check1(r, c):
         return (
             r,
@@ -61,6 +60,7 @@ def main():
         )
 
     res = [0]
+
     def search(path_id, r, c):
         if (
             seen[r + 1][c]
@@ -91,7 +91,7 @@ def main():
                 seen[nr][nc] = False
             return
 
-        for act in (check1, check2, check3, check4):
+        for act in (check4, check2, check3, check1):
             nr, nc, yes = act(r, c)
             if yes:
                 seen[nr][nc] = True
